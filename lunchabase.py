@@ -1,61 +1,87 @@
+import sys
 import random
 
 
 class lunchplace:
     """ A single lunch option """
-    available = True
 
     def __init__(self, name):
         self.name = name
+
+    def __str__(self):
+        return self.name
 
 
 class lunchcuisine:
     """ A collection of lunch options from one type of cuisine """
-    places = {}
-    available = True
 
     def __init__(self, name):
         self.name = name
+        self.places = {}
 
-    def add_place(self, place):
-        self.places[place] = lunchplace(place)
+    def __str__(self):
+        return self.name
+
+    def add_place(self, place_name):
+        place_key = place_name.strip().lower()
+        self.places[place_key] = lunchplace(place_name)
+
+    def reject_place(self, place_name):
+        place_key = place_name.strip().lower()
+        if place_key in self.places:
+            self.places.pop(place_key)
 
 
 class lunchabase:
     """ A collection of available lunch cuisines """
-    cuisines = {}
 
     def __init__(self, name):
         self.name = name
+        self.cuisines = {}
 
-    def add_place(self, cuisine, place):
-        if cuisine not in self.cuisines:
-            self.cuisines[cuisine] = lunchcuisine(cuisine)
-        if place not in self.cuisines[cuisine].places:
-            self.cuisines[cuisine].places[place] = lunchplace(place)
+    def add_cuisine(self, cuisine_name):
+        cuisine_key = cuisine_name.strip().lower()
+        if cuisine_key not in self.cuisines:
+            self.cuisines[cuisine_key] = lunchcuisine(cuisine_name)
+        return self.cuisines[cuisine_key]
 
-    def reject_cuisine(self, cuisine):
-        if cuisine in self.cuisines:
-            self.cuisines[cuisine].available = False
+    def add_place(self, cuisine_name, place_name):
+        place_key = place_name.strip().lower()
+        cuisine = self.add_cuisine(cuisine_name)
+        cuisine.places[place_key] = lunchplace(place_name)
 
-    def reject_place(self, cuisine, place):
-        if cuisine in self.cuisines and place in self.cuisines[cuisine].places:
-            self.cuisines[cuisine].places[place].available = False
+    def reject_cuisine(self, cuisine_name):
+        cuisine_key = cuisine_name.strip().lower()
+        if cuisine_key in self.cuisines:
+            self.cuisines.pop(cuisine_key)
+            return
+
+    def reject_place(self, place_name):
+        for cuisine_key, cuisine in self.cuisines.iteritems():
+            cuisine.reject_place(place_name)
+            if len(cuisine.places) == 0:
+                self.reject_cuisine(cuisine_key)
+                return
 
     def choose_cuisine(self):
-        valid = False
-        while not valid:
-            choice = random.choice(self.cuisines.keys())
-            valid = self.cuisines[choice].available
-        return self.cuisines[choice]
+        return self.cuisines[random.choice(self.cuisines.keys())]
 
     def choose_place(self):
-        valid = False
-        while not valid:
-            cuisine = self.choose_cuisine()
-            choice = random.choice(cuisine.places.keys())
-            valid = cuisine.places[choice].available
-        return cuisine.places[choice]
+        if len(self.cuisines) == 0:
+            print "There is no pleasing you, is there?"
+            sys.exit(1)
+        cuisine = self.choose_cuisine()
+        return cuisine.places[random.choice(cuisine.places.keys())]
 
     def display_cuisines(self):
-        print self.cuisines.keys()
+        option = 0
+        for cuisine in self.cuisines.itervalues():
+            option = option+1
+            print str(option) + ". " + cuisine.name
+
+    def display_tree(self):
+        for cuisine in self.cuisines.itervalues():
+            print cuisine
+            for place in cuisine.places.itervalues():
+                print "--- ",
+                print place
